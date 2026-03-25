@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Objectif ENAC - Préparation Mathématiques</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {
+fontFamily: {
+sans: ['Inter', 'sans-serif'],
+},
+colors: {
+navy: {
+950: '#080C14',
+900: '#0F172A',
+800: '#1E293B',
+},
+sky: {
+400: '#38BDF8',
+500: '#0EA5E9',
+600: '#0284C7',
+},
+pearl: '#F8FAFC'
+},
+backgroundImage: {
+'grid-pattern': "url('https://www.transparenttextures.com/patterns/carbon-fibre.png')",
+}
+}
+}
+}
+</script>
+<style>
+body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+.hero-gradient { background: radial-gradient(circle at top right, #1E293B, #0F172A, #080C14); }
+.glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+.dark .nav-blur { backdrop-filter: blur(16px); background-color: rgba(15, 23, 42, 0.9); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.nav-blur { backdrop-filter: blur(16px); background-color: rgba(255, 255, 255, 0.8); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+.chart-container { position: relative; width: 100%; max-width: 900px; margin: auto; height: 380px; }
+.card-hover:hover { transform: translateY(-5px); border-color: #38BDF8; box-shadow: 0 10px 30px -10px rgba(56, 189, 248, 0.2); }
+#payment-modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
+#payment-modal.hidden { opacity: 0; visibility: hidden; display: none; }
+</style>
+</head>
+<body class="bg-white dark:bg-navy-950 text-slate-700 dark:text-slate-300 antialiased overflow-x-hidden selection:bg-sky-500 selection:text-white">
+
+<!-- Bouton Mode Sombre Flottant -->
+<button id="theme-toggle" class="fixed bottom-6 right-6 z-[60] p-3 bg-white dark:bg-navy-800 border border-slate-200 dark:border-white/10 rounded-full shadow-2xl hover:scale-110 transition-all text-navy-900 dark:text-sky-400">
+    <span id="theme-toggle-dark-icon" class="hidden">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path></svg>
+    </span>
+    <span id="theme-toggle-light-icon">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+    </span>
+</button>
+
+<!-- MODAL DE PAIEMENT (STRIPE UNIQUEMENT) -->
+<div id="payment-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm">
+    <div class="bg-white dark:bg-navy-900 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-white/10">
+        <div class="p-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-pearl dark:bg-navy-800">
+            <h3 class="font-bold text-navy-900 dark:text-white italic uppercase tracking-tighter">Paiement Sécurisé</h3>
+            <button id="close-modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-2xl transition-colors">&times;</button>
+        </div>
+        <div class="p-8 text-center">
+            <div class="mb-8">
+                <p class="text-xs text-slate-400 uppercase font-bold tracking-widest mb-1 italic">Votre Commande</p>
+                <p class="font-extrabold text-navy-900 dark:text-white text-lg">Pack Intégral (15 Sujets)</p>
+                <div class="text-4xl font-black text-sky-500 mt-2 italic">15€</div>
+            </div>
+            
+            <div class="space-y-4">
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 italic">Accès immédiat par carte</p>
+                
+                <!-- Bouton Stripe Unique -->
+                <a href="https://buy.stripe.com/28E3cuacWdnPe2ngSBdfG00" target="_blank" class="flex items-center justify-center gap-3 w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-5 rounded-xl transition-all shadow-lg shadow-sky-500/20 group uppercase italic text-sm tracking-widest">
+                    <span>💳 Payer par Carte / Apple Pay</span>
+                </a>
+                <p class="text-[9px] text-slate-400 mt-4 italic uppercase font-bold">Transactions sécurisées par Stripe</p>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-slate-100 dark:border-white/5 opacity-50">
+                <p class="text-[9px] text-center text-slate-400 font-bold uppercase tracking-widest italic text-pretty">Reçu par email dès confirmation</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<nav id="navbar" class="fixed w-full z-50 transition-all duration-300 py-4 nav-blur">
+    <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+        <a href="#" class="group flex items-center">
+            <img src="logo.png" alt="Logo Objectif ENAC" class="h-12 w-auto transition-transform group-hover:scale-105">
+        </a>
+
+        <div class="hidden md:flex gap-8 text-sm font-semibold text-slate-600 dark:text-slate-400">
+            <a href="#programme" class="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">Le Pack</a>
+            <a href="#gratuit" class="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">Sujet n°1</a>
+            <a href="#tarif" class="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">Tarif</a>
+            <a href="#faq" class="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">FAQ</a>
+            <a href="mailto:contact.objectifenac@gmail.com" class="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">Contact</a>
+        </div>
+
+        <a href="#tarif" class="bg-sky-500 hover:bg-sky-600 text-white px-6 py-2.5 rounded shadow-lg shadow-sky-500/20 font-bold transition-all text-sm inline-block">
+            Pack Complet
+        </a>
+    </div>
+</nav>
+
+<header class="relative pt-32 pb-24 lg:pt-56 lg:pb-48 bg-navy-950 text-white overflow-hidden">
+
+<link rel="icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Objectif ENAC - Préparation Mathématiques EPL",
+  "url": "https://objectifenac.shop",
+  "logo": "https://objectifenac.shop/favicon-192x192.png"
+}
+</script>
+
+    <div class="absolute inset-0 z-0">
+        <img src="b_ok_parfait_par_contr.png" alt="Étudiants préparation ENAC" class="w-full h-full object-cover object-right md:object-center opacity-50 md:opacity-70">
+        <div class="absolute inset-0 bg-gradient-to-r from-navy-950 via-navy-950/60 to-transparent"></div>
+    </div>
+
+    <div class="absolute inset-0 opacity-20 bg-grid-pattern z-10"></div>
+
+    <div class="max-w-7xl mx-auto px-6 relative z-20">
+        <div class="max-w-3xl text-center md:text-left">
+            <div class="inline-flex items-center gap-3 px-4 py-2 mb-8 bg-sky-500/10 border border-sky-500/30 rounded-full backdrop-blur-sm">
+                <span class="text-sky-400 text-xs font-bold tracking-widest uppercase italic">Lu et approuvé par des professeurs agrégés</span>
+            </div>
+            
+            <h1 class="text-5xl lg:text-7xl font-extrabold tracking-tight mb-8 leading-[1.05]">
+                Faites la différence sur les <span class="text-sky-400 italic">écrits ENAC</span>.
+            </h1>
+            
+            <p class="text-xl lg:text-2xl text-slate-300 mb-12 max-w-2xl leading-relaxed font-light">
+                Entraînez-vous avec 15 sujets types de mathématiques récents, conçus et validés par des profs de CPGE agrégés.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-5 justify-center md:justify-start mb-12">
+                <a href="#tarif" class="bg-sky-500 hover:bg-sky-600 text-white px-10 py-5 rounded font-bold text-center transition-all shadow-xl shadow-sky-500/30 text-lg inline-block uppercase italic tracking-tighter">
+                    ACHETER LE PACK COMPLET
+                </a>
+                <a href="#gratuit" class="bg-white/5 border border-white/20 hover:bg-white/10 text-white px-10 py-5 rounded font-bold text-center transition-all backdrop-blur-sm italic tracking-tighter">
+                    Essayer le Sujet N°1
+                </a>
+            </div>
+
+            <ul class="space-y-3 text-sm font-bold uppercase tracking-wider italic text-slate-400">
+                <li class="flex items-center gap-3"><span class="text-sky-500 text-lg">•</span> 15 examens types ENAC</li>
+                <li class="flex items-center gap-3"><span class="text-sky-500 text-lg">•</span> Corrigés détaillés en PDF</li>
+                <li class="flex items-center gap-3"><span class="text-sky-500 text-lg">•</span> Conçu pour 2026</li>
+            </ul>
+        </div>
+    </div>
+</header>
+
+<section id="methode" class="py-24 bg-white dark:bg-navy-950">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+<div>
+<h2 class="text-4xl font-extrabold text-navy-900 dark:text-white mb-8 leading-tight italic uppercase tracking-tighter">Objectif : <span class="text-sky-500">ENAC</span></h2>
+<p class="text-slate-600 dark:text-slate-400 text-lg mb-8 leading-relaxed">
+Le concours ENAC exige une rapidité d'exécution et des automatismes solides. Nos sujets sont calqués sur les standards des concours EPL/S, offrant une préparation rigoureuse et structurée.
+</p>
+<ul class="space-y-4">
+<li class="flex items-start gap-3">
+<div class="mt-1 bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-400 p-1 rounded-full text-xs font-bold">✓</div>
+<span class="text-slate-700 dark:text-slate-300"><strong>Validation Agrégée :</strong> Contenu vérifié par des professeurs de CPGE.</span>
+</li>
+<li class="flex items-start gap-3">
+<div class="mt-1 bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-400 p-1 rounded-full text-xs font-bold">✓</div>
+<span class="text-slate-700 dark:text-slate-300"><strong>Automatismes :</strong> Identifiez les types de problèmes en un coup d'œil.</span>
+</li>
+<li class="flex items-start gap-3">
+<div class="mt-1 bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-400 p-1 rounded-full text-xs font-bold">✓</div>
+<span class="text-slate-700 dark:text-slate-300"><strong>Format PDF :</strong> Révisions optimisées sur ordinateur, tablette et mobile.</span>
+</li>
+</ul>
+</div>
+<div class="bg-pearl dark:bg-navy-900 p-8 rounded-2xl border border-slate-200 dark:border-white/5 shadow-xl">
+<div class="text-center mb-8">
+<h3 class="font-bold text-navy-900 dark:text-white italic tracking-tighter">Courbe de Progression (Score estimé /20)</h3>
+<p class="text-xs text-slate-400">Évolution constatée au fil des 15 entraînements</p>
+</div>
+<div class="chart-container">
+<canvas id="progressionChart"></canvas>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="programme" class="py-24 bg-navy-950 text-white relative">
+<div class="absolute inset-0 opacity-5 bg-grid-pattern"></div>
+<div class="max-w-7xl mx-auto px-6 relative z-10">
+<div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+<div>
+<h2 class="text-4xl font-bold mb-4 italic uppercase tracking-tighter">Le Pack de Préparation mathématiques</h2>
+<p class="text-slate-400 text-lg">L'intégralité des notions clés couvertes en 15 dossiers.</p>
+</div>
+<div class="hidden md:block">
+<div class="text-right">
+<div class="text-3xl font-bold text-sky-400 italic">15 / 15</div>
+<div class="text-xs uppercase tracking-widest text-slate-500 font-bold">Modules PDF</div>
+</div>
+</div>
+</div>
+<div id="grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+</div>
+</section>
+
+<section id="gratuit" class="py-24 bg-white dark:bg-navy-950 border-y border-slate-100 dark:border-white/5">
+<div class="max-w-5xl mx-auto px-6">
+<div class="bg-navy-900 dark:bg-navy-900 border border-white/5 rounded-3xl p-10 lg:p-16 flex flex-col lg:flex-row items-center gap-12 text-white relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-sky-500 rounded-full blur-[100px] opacity-20 -mr-32 -mt-32"></div>
+<div class="flex-1 relative z-10">
+<span class="text-sky-400 font-bold text-sm tracking-widest uppercase mb-4 block italic">Évaluation initiale</span>
+<h2 class="text-4xl font-bold mb-6 italic uppercase tracking-tighter">Le Sujet n°1 est gratuit.</h2>
+<p class="text-slate-400 text-lg mb-8 italic text-pretty">
+Évaluez votre niveau dès maintenant avec l'énoncé complet du premier sujet. Sans engagement.
+</p>
+<div class="flex flex-wrap gap-4">
+<a href="enonce-sujet-1.pdf" download="Enonce_Sujet_1.pdf" class="bg-sky-500 hover:bg-sky-600 text-white px-8 py-4 rounded font-bold transition-all flex items-center gap-3 uppercase italic text-xs tracking-widest no-underline">
+    <span>⭳</span> Télécharger l'énoncé
+</a>
+<button onclick="document.getElementById('tarif').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-8 py-4 rounded font-bold transition-all uppercase italic text-xs tracking-widest">
+Voir le Corrigé
+</button>
+</div>
+</div>
+<div class="w-full lg:w-1/3 flex justify-center">
+<div class="w-48 h-64 bg-white/5 border border-white/10 rounded-lg flex flex-col p-4 shadow-2xl rotate-3">
+<div class="w-full h-8 bg-sky-500/20 rounded mb-4"></div>
+<div class="space-y-2">
+<div class="w-full h-1 bg-white/10 rounded"></div>
+<div class="w-full h-1 bg-white/10 rounded"></div>
+</div>
+<div class="mt-auto text-[10px] text-sky-400 font-bold uppercase tracking-widest italic">SUJET 01 • PDF</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section class="py-16 bg-navy-900 text-center">
+<div class="max-w-3xl mx-auto px-6">
+<h3 class="text-white text-xl md:text-2xl font-bold mb-6 italic uppercase tracking-tighter">Concours prévu le 31 Mars</h3>
+<div id="countdown" class="flex justify-center gap-4 md:gap-8 text-white">
+<div class="flex flex-col items-center"><span id="cd-days" class="text-4xl md:text-5xl font-black text-sky-400">00</span><span class="text-xs text-slate-500 uppercase tracking-widest mt-2 font-bold">Jours</span></div>
+<div class="text-4xl md:text-5xl font-black text-slate-600">:</div>
+<div class="flex flex-col items-center"><span id="cd-hours" class="text-4xl md:text-5xl font-black text-sky-400">00</span><span class="text-xs text-slate-500 uppercase tracking-widest mt-2 font-bold">Heures</span></div>
+<div class="text-4xl md:text-5xl font-black text-slate-600">:</div>
+<div class="flex flex-col items-center"><span id="cd-mins" class="text-4xl md:text-5xl font-black text-sky-400">00</span><span class="text-xs text-slate-500 uppercase tracking-widest mt-2 font-bold">Minutes</span></div>
+</div>
+</div>
+</section>
+
+<section id="tarif" class="py-24 bg-pearl dark:bg-navy-950">
+<div class="max-w-4xl mx-auto px-6 text-center">
+<h2 class="text-4xl font-extrabold text-navy-900 dark:text-white mb-6 italic uppercase tracking-tighter">Accès complet à la préparation</h2>
+<p class="text-slate-500 dark:text-slate-400 text-xl mb-16 italic">Un investissement pour votre réussite.</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+<div class="md:col-span-1 text-left hidden md:block">
+<h4 class="font-bold text-navy-900 dark:text-white mb-4 italic uppercase text-sm tracking-widest">Prix Symbolique</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed italic">Le tarif est fixé à 15€ pour rendre ces ressources accessibles à tous les candidats, tout en valorisant le travail effectué.</p>
+</div>
+<div class="md:col-span-1 bg-white dark:bg-navy-900 p-12 rounded-2xl shadow-2xl border-2 border-sky-500 relative transform scale-110 z-10">
+<div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-[10px] font-black px-4 py-1 rounded-full uppercase italic">Accès à Vie</div>
+<div class="text-6xl font-black text-navy-900 dark:text-white mb-2 italic">15€</div>
+<div class="text-xs text-slate-400 font-bold mb-8 tracking-widest uppercase italic">Paiement unique sécurisé</div>
+<ul class="text-left space-y-4 mb-10 text-sm dark:text-slate-300 italic font-medium">
+<li class="flex items-center gap-2"><span class="text-sky-500">✓</span> 15 Sujets PDF Haute qualité</li>
+<li class="flex items-center gap-2"><span class="text-sky-500">✓</span> 15 Corrigés PDF Haute qualité</li>
+<li class="flex items-center gap-2"><span class="text-sky-500">✓</span> Support prioritaire</li>
+</ul>
+<button onclick="openPayment()" class="block w-full bg-navy-900 dark:bg-sky-500 hover:bg-black dark:hover:bg-sky-400 text-white dark:text-navy-950 text-center font-bold py-4 rounded-xl transition-all shadow-xl uppercase italic tracking-tighter">
+Acheter le Pack
+</button>
+</div>
+<div class="md:col-span-1 text-left space-y-6 pl-4">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-white dark:bg-navy-800 rounded-full shadow flex items-center justify-center text-sky-500 text-lg">💳</div>
+<div class="text-[10px] font-bold text-navy-900 dark:text-white italic uppercase tracking-widest">CB / Apple Pay (Stripe)</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-white dark:bg-navy-800 rounded-full shadow flex items-center justify-center text-sky-500 text-lg">📧</div>
+<div class="text-[10px] font-bold text-navy-900 dark:text-white italic uppercase tracking-widest">Délivrance automatique par mail</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="faq" class="py-24 bg-white dark:bg-navy-950">
+<div class="max-w-3xl mx-auto px-6 text-center">
+<span class="text-sky-500 font-bold text-xs uppercase tracking-widest mb-4 block italic">Informations pratiques</span>
+<h2 class="text-5xl font-black text-navy-900 dark:text-white mb-16 italic uppercase tracking-tighter">FAQ</h2>
+<div class="space-y-4 text-left" id="faq-container"></div>
+</div>
+</section>
+
+<footer class="bg-white dark:bg-navy-950 text-slate-500 py-16 border-t border-slate-100 dark:border-white/5">
+<div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="text-xl font-extrabold text-navy-900 dark:text-white flex items-center gap-2">
+<span class="text-sky-500 uppercase italic font-black">Objectif</span><span class="uppercase font-black">ENAC</span>
+</div>
+<p class="text-[10px] italic font-bold uppercase tracking-widest">Plateforme indépendante de préparation.</p>
+<div class="flex gap-8 text-[10px] font-black uppercase tracking-widest">
+<a href="mailto:contact.objectifenac@gmail.com" class="hover:text-sky-400 italic">contact.objectifenac@gmail.com</a>
+</div>
+</div>
+</footer>
+
+<script>
+// Modal Functions
+function openPayment() {
+    const modal = document.getElementById('payment-modal');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePayment() {
+    const modal = document.getElementById('payment-modal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+
+// Payment Modal Close
+document.getElementById('close-modal').addEventListener('click', closePayment);
+window.addEventListener('click', (e) => {
+    if (e.target === document.getElementById('payment-modal')) closePayment();
+});
+
+// Dark Mode Toggle - Version Nuit par défaut
+const themeToggleBtn = document.getElementById('theme-toggle');
+const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+// Logique de priorité : 1. Choix enregistré, 2. Défaut : Dark
+const currentTheme = localStorage.getItem('color-theme') || 'dark';
+
+if (currentTheme === 'dark') {
+    document.documentElement.classList.add('dark');
+    themeToggleDarkIcon.classList.remove('hidden');
+    themeToggleLightIcon.classList.add('hidden');
+} else {
+    document.documentElement.classList.remove('dark');
+    themeToggleDarkIcon.classList.add('hidden');
+    themeToggleLightIcon.classList.remove('hidden');
+}
+
+themeToggleBtn.addEventListener('click', () => {
+    if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('color-theme', 'light');
+        themeToggleDarkIcon.classList.add('hidden');
+        themeToggleLightIcon.classList.remove('hidden');
+    } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('color-theme', 'dark');
+        themeToggleDarkIcon.classList.remove('hidden');
+        themeToggleLightIcon.classList.add('hidden');
+    }
+});
+
+// Countdown Logic
+const countDownDate = new Date("March 31, 2026 08:00:00").getTime();
+const updateCountdown = () => {
+    const now = new Date().getTime();
+    const distance = countDownDate - now;
+    if (distance < 0) return;
+    document.getElementById("cd-days").innerText = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+    document.getElementById("cd-hours").innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+    document.getElementById("cd-mins").innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+};
+setInterval(updateCountdown, 60000); updateCountdown();
+
+// Modules Grid Generation
+const gridContainer = document.getElementById('grid-container');
+for (let i = 1; i <= 15; i++) {
+    const el = document.createElement('div');
+    el.className = 'glass-panel p-8 rounded-xl border border-white/10 card-hover transition-all cursor-default group';
+    el.innerHTML = `
+        <div class="flex justify-between items-start mb-6">
+            <div class="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center font-bold text-sky-400 group-hover:bg-sky-500 group-hover:text-white transition-colors italic">${i}</div>
+            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Pack ENAC</span>
+        </div>
+        <h4 class="text-lg font-bold text-white mb-2 italic uppercase tracking-tighter">Sujet ${i}</h4>
+        <p class="text-xs text-slate-500 leading-relaxed italic mb-6">Sujet type concours avec corrigé détaillé rédigé par un expert.</p>
+        <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase italic">
+            <span class="px-2 py-1 bg-white/5 rounded">Enoncé</span>
+            <span class="px-2 py-1 bg-white/5 rounded">Corrigé</span>
+        </div>
+    `;
+    gridContainer.appendChild(el);
+}
+
+// FAQ Section
+const faqs = [
+    { q: "Sous quel format sont les sujets et corrigés ?", a: "Tous les documents sont au format PDF haute qualité, lisibles sur ordinateur, tablette et smartphone." },
+    { q: "L'accès est-il immédiat après le paiement ?", a: "Oui. Dès la validation de votre paiement, vous recevez un email automatique contenant vos accès." },
+    { q: "Les sujets sont-ils conformes au vrai concours ?", a: "Oui. Ils respectent les programmes officiels et sont validés par des professeurs agrégés." },
+    { q: "Comment contacter le support ?", a: "Vous pouvez nous écrire à <strong>contact.objectifenac@gmail.com</strong>, nous répondons sous 24h." }
+];
+
+const faqContainer = document.getElementById('faq-container');
+faqs.forEach((faq, index) => {
+    const item = document.createElement('div');
+    item.className = 'bg-pearl dark:bg-navy-900/50 border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden';
+    item.innerHTML = `
+        <button class="faq-btn w-full text-left p-6 font-bold text-navy-900 dark:text-white flex justify-between items-center italic uppercase text-xs tracking-widest transition-colors hover:bg-slate-50 dark:hover:bg-white/5" data-target="faq-${index}">
+            ${faq.q}
+            <span class="text-sky-500 text-2xl transition-transform" id="icon-${index}">+</span>
+        </button>
+        <div id="faq-${index}" class="hidden p-6 text-slate-500 dark:text-slate-400 italic font-medium leading-relaxed bg-white dark:bg-navy-900/30 border-t border-slate-100 dark:border-white/5">${faq.a}</div>
+    `;
+    faqContainer.appendChild(item);
+});
+
+document.querySelectorAll('.faq-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const targetDiv = document.getElementById(targetId);
+        const icon = document.getElementById(targetId.replace('faq', 'icon'));
+        const isHidden = targetDiv.classList.contains('hidden');
+        targetDiv.classList.toggle('hidden');
+        icon.innerText = isHidden ? '−' : '+';
+        icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+});
+
+// Progression Chart
+const ctx = document.getElementById('progressionChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Sujet 1', 'Sujet 5', 'Sujet 10', 'Sujet 15', 'Concours'],
+        datasets: [{
+            label: 'Note (/20)',
+            data: [9, 12, 15, 17.5, 19],
+            borderColor: '#38BDF8',
+            backgroundColor: 'rgba(56, 189, 248, 0.05)',
+            borderWidth: 4,
+            pointRadius: 6,
+            pointBackgroundColor: '#0F172A',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { min: 5, max: 20, grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#94a3b8', font: { weight: 'bold' } } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { weight: 'bold' } } }
+        }
+    }
+});
+});
+</script>
+</body>
+</html>
